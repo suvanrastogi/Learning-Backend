@@ -3,7 +3,7 @@
 
 // }
 
-export { asyncHandler }
+// export { asyncHandler }
 
 /*try catch style*/
 // const asyncHandler = (fn) => async (req, res, next) => {
@@ -17,7 +17,7 @@ export { asyncHandler }
 /*promise style*/
 const asyncHandler = (fn) => {
     return (req, res, next) => {
-        Promise.resolve(fn(req, res, next)).reject((err) => next(err));
+        Promise.resolve(fn(req, res, next)).catch((err) => next(err));
     };
 };
 
