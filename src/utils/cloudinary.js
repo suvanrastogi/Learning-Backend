@@ -1,5 +1,5 @@
-// files will come through a file system . 
-import { v2 as cloudinary } from "cloudinary";
+import "dotenv/config";
+import {v2 as cloudinary} from "cloudinary"
 import fs from "fs";
 
 cloudinary.config({
@@ -18,7 +18,8 @@ const uploadCloudinary = async (localFilePath) => {
             resource_type: "auto"
         })
         //file hasbeen  uploaded successfully
-        console.log("file is uploaded on cloudinary", response.url);
+        // console.log("file is uploaded on cloudinary", response.url);
+        fs.unlinkSync(localFilePath)
         return response;
     } catch (err) {
         //if localFilePath has appeared that means it is on server already . so catching an err after that we remove the file first 
@@ -27,7 +28,7 @@ const uploadCloudinary = async (localFilePath) => {
     }
 }
 
-cloudinary.v2.uploader.upload("https://someting",
+    cloudinary.uploader.upload("https://someting",
     { public_id: "" },
     function (error, result) { console.log(result); });
 
