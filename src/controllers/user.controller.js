@@ -272,33 +272,37 @@ const updateAccountDetails = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, user, "Account details updated"));
 });
 
-const updateUserAvatar = asyncHandler(async(req, res) => {
-  const avatarLocalPath = req.file?.path
-  
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  // upload.single("avatar") places the uploaded file in req.file.
+  const avatarLocalPath = req.file?.path;
+
   if (!avatarLocalPath) {
     throw new ApiError(400, "avatar file is missing");
   }
 
-  const avatar = await uploadCloudinary(avatarLocalPath)
+  const avatar = await uploadCloudinary(avatarLocalPath);
 
   if (!avatar.url) {
     throw new ApiError(400, "error while uploading on avatar");
   }
 
-  const user = await User.findByIdAndUpdate(req.user._id,
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
     {
       $set: {
-        avatar: avatar.url
-      }
+        avatar: avatar.url,
+      },
     },
-    { new: true }).select("-password")
-  
-    return res
-      .status(200)
-      .json(new ApiResponse(200, user, "avatar updated successfully"));
-})
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "avatar updated successfully"));
+});
 
 const updatCoverImage = asyncHandler(async (req, res) => {
+  // upload.single("coverImage") also uses req.file because only one file is accepted.
   const coverImageLocalPath = req.file?.path;
 
   if (!coverImageLocalPath) {
@@ -311,7 +315,7 @@ const updatCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "error while uploading on coverImage");
   }
 
- const user = await User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
@@ -323,9 +327,7 @@ const updatCoverImage = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(
-    new ApiResponse(200, user, "Cover image updated successfully")
-  )
+    .json(new ApiResponse(200, user, "Cover image updated successfully"));
 });
 
 export {
@@ -336,4 +338,6 @@ export {
   changeCurrentUserPassword,
   getCurrentUser,
   updateAccountDetails,
+  updateUserAvatar,
+  updateCoverImage,
 };
