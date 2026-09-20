@@ -3,6 +3,7 @@ import {
   loginUser,
   logoutUser,
   registerUser,
+  refreshAccessToken,
   updateCoverImage,
   updateUserAvatar,
 } from "../controllers/user.controller.js";
@@ -32,11 +33,13 @@ router.route("/logout").post(verifyJWT, logoutUser); //verifyJWT is a middleware
 router.route("/refresh-access-token").post(refreshAccessToken);
 
 // The frontend sends one file with field name "avatar"; Multer creates req.file.
-router.route("/update-avatar").patch(upload.single("avatar"), updateUserAvatar);
+router
+  .route("/update-avatar")
+  .patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
 
 // The frontend sends one file with field name "coverImage"; Multer creates req.file.
 router
   .route("/update-coverimage")
-  .patch(upload.single("coverImage"), updateCoverImage);
+  .patch(verifyJWT, upload.single("coverImage"), updateCoverImage);
 
 export default router;

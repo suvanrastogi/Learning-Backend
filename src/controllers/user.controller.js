@@ -2,7 +2,10 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { User } from "../models/user.model.js";
-import { uploadCloudinary } from "../utils/cloudinary.js";
+import {
+  deleteOldFileOnCloudinary,
+  uploadCloudinary,
+} from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 
 const generateAccessRefreshTokens = async (userId) => {
@@ -81,8 +84,14 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const user = await User.create({
     fullname,
-    avatar: avatar.url,
-    coverImage: coverImage?.url || "",
+    avatar: {
+      url: avatar.url,
+      publicId: avatar.public_id,
+    },
+    coverImage: {
+      url: coverImage?.url || "",
+      publicId: coverImage?.public_id || "",
+    },
     email,
     password,
     username: username.toLowerCase(),
@@ -193,7 +202,7 @@ const refreshAccessToken = asyncHandler(async (req, res, next) => {
   const incomingRefreshToken =
     req.cookies.refreshToken || req.body.refreshToken;
 
-  if (incomingRefreshToken) {
+  if (!incomingRefreshToken) {
     throw new ApiError(401, "refresh token is missing");
   }
 
@@ -218,10 +227,10 @@ const refreshAccessToken = asyncHandler(async (req, res, next) => {
 
     res
       .status(200)
-      .cookies("accessToken", newAccessToken, options)
+      .cookie("accessToken", newAccessToken, options)
       .json(new ApiResponse(200, {}, "Access token refreshed"));
   } catch (err) {
-    throw new ApiError(401, error?.message);
+    throw new ApiError(401, err?.message || "Invalid refresh token");
   }
 });
 
@@ -280,17 +289,24 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "avatar file is missing");
   }
 
+  const user = await User.findById(req.user._id);
+  const oldAvatarPublicId = user?.avatar?.publicId;
   const avatar = await uploadCloudinary(avatarLocalPath);
 
-  if (!avatar.url) {
+  if (!avatar?.url) {
     throw new ApiError(400, "error while uploading on avatar");
   }
 
-  const user = await User.findByIdAndUpdate(
+  if (oldAvatarPublicId) {
+    await deleteOldFileOnCloudinary(oldAvatarPublicId);
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
-        avatar: avatar.url,
+        "avatar.url": avatar.url,
+        "avatar.publicId": avatar.public_id,
       },
     },
     { new: true }
@@ -298,10 +314,10 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "avatar updated successfully"));
+    .json(new ApiResponse(200, updatedUser, "avatar updated successfully"));
 });
 
-const updatCoverImage = asyncHandler(async (req, res) => {
+const updateCoverImage = asyncHandler(async (req, res) => {
   // upload.single("coverImage") also uses req.file because only one file is accepted.
   const coverImageLocalPath = req.file?.path;
 
@@ -309,17 +325,24 @@ const updatCoverImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, "coverImage file is missing");
   }
 
+  const user = await User.findById(req.user._id);
+  const oldCoverImagePublicId = user?.coverImage?.publicId;
   const coverImage = await uploadCloudinary(coverImageLocalPath);
 
-  if (!coverImage.url) {
+  if (!coverImage?.url) {
     throw new ApiError(400, "error while uploading on coverImage");
   }
 
-  const user = await User.findByIdAndUpdate(
+  if (oldCoverImagePublicId) {
+    await deleteOldFileOnCloudinary(oldCoverImagePublicId);
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     {
       $set: {
-        coverImage: coverImage.url,
+        "coverImage.url": coverImage.url,
+        "coverImage.publicId": coverImage.public_id,
       },
     },
     { new: true }
@@ -327,7 +350,9 @@ const updatCoverImage = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Cover image updated successfully"));
+    .json(
+      new ApiResponse(200, updatedUser, "Cover image updated successfully")
+    );
 });
 
 export {
