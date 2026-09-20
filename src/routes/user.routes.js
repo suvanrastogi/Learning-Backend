@@ -4,6 +4,9 @@ import {
   logoutUser,
   registerUser,
   refreshAccessToken,
+  changeCurrentUserPassword,
+  getCurrentUser,
+  updateAccountDetails,
   updateCoverImage,
   updateUserAvatar,
 } from "../controllers/user.controller.js";
@@ -31,6 +34,17 @@ router.route("/login").post(loginUser);
 router.route("/logout").post(verifyJWT, logoutUser); //verifyJWT is a middleware just before controller
 
 router.route("/refresh-access-token").post(refreshAccessToken);
+
+// Protected account routes require a valid access token.
+router.route("/current-user").get(verifyJWT, getCurrentUser);
+
+router
+  .route("/change-password")
+  .patch(verifyJWT, changeCurrentUserPassword);
+
+router
+  .route("/update-account")
+  .patch(verifyJWT, updateAccountDetails);
 
 // The frontend sends one file with field name "avatar"; Multer creates req.file.
 router
