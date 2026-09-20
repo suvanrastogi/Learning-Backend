@@ -21,4 +21,5 @@ router.route("/login").post(loginUser)
 //secured routes
 router.route("/logout").post(verifyJWT,logoutUser)//verifyJWT is a middleware just before controller
 
+router.route("/refresh-access-token").post(refreshAccessToken)
 export default router;
