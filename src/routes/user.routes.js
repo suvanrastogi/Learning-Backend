@@ -9,6 +9,8 @@ import {
   updateAccountDetails,
   updateCoverImage,
   updateUserAvatar,
+  getUserChannelProfile,
+  getWatchHistory,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -38,13 +40,9 @@ router.route("/refresh-access-token").post(refreshAccessToken);
 // Protected account routes require a valid access token.
 router.route("/current-user").get(verifyJWT, getCurrentUser);
 
-router
-  .route("/change-password")
-  .patch(verifyJWT, changeCurrentUserPassword);
+router.route("/change-password").patch(verifyJWT, changeCurrentUserPassword);
 
-router
-  .route("/update-account")
-  .patch(verifyJWT, updateAccountDetails);
+router.route("/update-account").patch(verifyJWT, updateAccountDetails);
 
 // The frontend sends one file with field name "avatar"; Multer creates req.file.
 router
@@ -55,5 +53,9 @@ router
 router
   .route("/update-coverimage")
   .patch(verifyJWT, upload.single("coverImage"), updateCoverImage);
+
+router.route("/c/:username").get(verifyJWT, getUserChannelProfile);
+
+router.route("/history").get(verifyJWT, getWatchHistory);
 
 export default router;
