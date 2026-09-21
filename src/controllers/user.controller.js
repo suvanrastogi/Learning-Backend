@@ -355,6 +355,85 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     );
 });
 
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params //we take from url
+  
+  if (!username?.trim()) {
+    throw new ApiError(400, "username is missing ")
+  }
+
+  // await User.find({username}) //inside find where clause is written like this .
+  const channel = await User.aggregate([
+    //first pipeline
+    {
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    }, //we got one document
+
+    //for that one document we do a lookup - pipeline 2
+    {
+      // from each document it will search for my channel name . [channel(_id)->document(_id)]
+      $lookup: {
+        from: "subscriptions",
+        foreignField: "channel", //kitne channels mujhe subscribe kar rakhe hai
+        localField: "_id",
+        as: "subscribers",
+      },
+    },
+    {
+      //from each document will search my name as a subscriber document-> [channel(_id)->document(_id)]
+      $lookup: {
+        from: "subscriptions",
+        foreignField: "subscriber", //kitne channels mai mai as a subscriber hu
+        localField: "_id",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        subscribersCount: {
+          $size: "$subscribers",
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $condition: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        fullname: 1,
+        username: 1,
+        subscribersCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+
+      }
+    }
+  ]);
+  if (!channel?.length) {
+    throw new ApiError(404, "channel does not exist")
+  }
+
+  return res
+  .status(200)
+    .json(
+    new ApiResponse(200, channel[0], "User channel fetched successfully")
+  )
+  console.log("this is the channel ",channel)
+})
+
 export {
   registerUser,
   loginUser,
@@ -365,4 +444,5 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateCoverImage,
+  getUser
 };
